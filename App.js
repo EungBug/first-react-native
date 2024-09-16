@@ -1,9 +1,28 @@
+import { Fontisto } from '@expo/vector-icons';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ko';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
-
+import {
+  ActivityIndicator,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 const { width: SCREEN_WIDTH } = Dimensions.get('window'); // Screen size
+
+const icons = {
+  Clouds: 'cloudy',
+  Clear: 'day-sunny',
+  Rain: 'rains',
+  Snow: 'snow',
+  Atmosphere: '',
+  Drizzle: 'rain',
+  Thunderstorm: 'lightning',
+};
 
 export default function App() {
   const [city, setCity] = useState('Loading...');
@@ -24,10 +43,10 @@ export default function App() {
     );
     setCity(location[0].city);
     const res = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&APPID=${process.env.API_KEY}`
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&APPID=${process.env.API_KEY}&units=metric`
     );
     const json = await res.json();
-    console.log(json);
+    setDays(json.list.filter(({ dt_txt }) => dt_txt.endsWith('03:00:00')));
   };
 
   useEffect(() => {
@@ -45,25 +64,38 @@ export default function App() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
       >
-        <View style={styles.day}>
-          <Text style={styles.temp}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
-
-        <View style={styles.day}>
-          <Text style={styles.temp}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
-
-        <View style={styles.day}>
-          <Text style={styles.temp}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
-
-        <View style={styles.day}>
-          <Text style={styles.temp}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
+        {days.length === 0 ? (
+          <View style={styles.day}>
+            <ActivityIndicator size='large' />
+          </View>
+        ) : (
+          days.map((day, index) => (
+            <View style={styles.day}>
+              <Text style={styles.date}>
+                {dayjs(day.dt_txt).locale('ko').format('YYYY년 M월 D일 (dd)')}
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  width: '100%',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Text style={styles.temp}>
+                  {parseFloat(day.main.temp).toFixed(1)}
+                </Text>
+                <Fontisto
+                  name={icons[day.weather[0].main]}
+                  color='#fff'
+                  size={40}
+                />
+              </View>
+              <Text style={styles.description}>{day.weather[0].main}</Text>
+              <Text style={styles.tinyText}>{day.weather[0].description}</Text>
+            </View>
+          ))
+        )}
       </ScrollView>
       <StatusBar style='light' />
     </View>
@@ -76,29 +108,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#3268a8',
   },
   city: {
-    flex: 1.2,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cityName: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: '500',
     color: '#fff',
   },
   weather: {},
   day: {
     width: SCREEN_WIDTH,
-    alignItems: 'center',
+    alignItems: 'start',
+    paddingHorizontal: 24,
+  },
+  date: {
+    color: '#fff',
+    fontSize: '18',
   },
   temp: {
-    marginTop: 30,
-    fontSize: 178,
+    marginTop: 10,
+    fontSize: 100,
     fontWeight: '600',
     color: '#fff',
   },
   description: {
-    marginTop: -30,
-    fontSize: 60,
+    fontSize: 50,
     color: '#fff',
+  },
+  tinyText: {
+    fontSize: 20,
+    color: '#fff',
+    marginStart: 4,
   },
 });
